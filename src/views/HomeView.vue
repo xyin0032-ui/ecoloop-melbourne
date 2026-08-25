@@ -45,7 +45,7 @@ import { RouterLink } from 'vue-router'
       </div>
 
       <div class="feature-card">
-        <div class="icon">🌱</div>
+        <div class="icon">🌱🌱🌱</div>
         <h2>Reduce Waste</h2>
         <p>
           Make better recycling choices and support a cleaner and more sustainable Melbourne community.
