@@ -1,20 +1,54 @@
 <script setup>
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+
+const menuOpen = ref(false)
+
+function closeMenu() {
+  menuOpen.value = false
+}
 </script>
 
 <template>
   <header class="header">
     <div class="nav-container">
-      <RouterLink to="/" class="logo">
+      <RouterLink to="/" class="logo" @click="closeMenu">
         EcoLoop Melbourne
       </RouterLink>
 
-      <nav class="nav-links">
-        <RouterLink to="/" class="nav-button">Home</RouterLink>
-        <RouterLink to="/guide" class="nav-button">Recycling Guide</RouterLink>
-        <RouterLink to="/points" class="nav-button">Find Recycling Points</RouterLink>
-        <RouterLink to="/about" class="nav-button">About Us</RouterLink>
-        <RouterLink to="/register" class="register-button">Register</RouterLink>
+      <button
+        class="menu-button"
+        type="button"
+        aria-label="Open navigation menu"
+        @click="menuOpen = !menuOpen"
+      >
+        ☰
+      </button>
+
+      <nav class="nav-links" :class="{ open: menuOpen }">
+        <RouterLink to="/" class="nav-button" @click="closeMenu">
+          Home
+        </RouterLink>
+
+        <RouterLink to="/guide" class="nav-button" @click="closeMenu">
+          Recycling Guide
+        </RouterLink>
+
+        <RouterLink to="/points" class="nav-button" @click="closeMenu">
+          Find Recycling Points
+        </RouterLink>
+
+        <RouterLink to="/about" class="nav-button" @click="closeMenu">
+          About Us
+        </RouterLink>
+
+        <RouterLink
+          to="/register"
+          class="register-button"
+          @click="closeMenu"
+        >
+          Register
+        </RouterLink>
       </nav>
     </div>
   </header>
@@ -68,7 +102,7 @@ import { RouterLink } from 'vue-router'
   padding: 10px 18px;
   border-radius: 8px;
   background-color: #2f6f4e;
-  color: white;
+  color: #ffffff;
   text-decoration: none;
   font-size: 15px;
   font-weight: 600;
@@ -82,5 +116,61 @@ import { RouterLink } from 'vue-router'
 .router-link-active.nav-button {
   background-color: #edf7f1;
   color: #2f6f4e;
+}
+
+.menu-button {
+  display: none;
+  padding: 8px 12px;
+  border: 1px solid #cfd9d3;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #2f6f4e;
+  cursor: pointer;
+  font-size: 22px;
+}
+
+/* Tablet and mobile */
+@media (max-width: 768px) {
+  .nav-container {
+    padding: 12px 20px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    font-size: 21px;
+  }
+
+  .menu-button {
+    display: block;
+  }
+
+  .nav-links {
+    display: none;
+    width: 100%;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-button {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  .register-button {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    text-align: center;
+  }
 }
 </style>
