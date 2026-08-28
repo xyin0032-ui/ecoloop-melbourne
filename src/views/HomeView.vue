@@ -29,7 +29,7 @@ import { RouterLink } from 'vue-router'
 
     <section class="features">
       <div class="feature-card">
-        <div class="icon">♻️♻️♻️</div>
+        <div class="icon">♻️</div>
         <h2>Recycling Guide</h2>
         <p>
           Check how common household waste such as batteries, glass and e-waste should be recycled.
@@ -37,7 +37,7 @@ import { RouterLink } from 'vue-router'
       </div>
 
       <div class="feature-card">
-        <div class="icon">📍</div>
+        <div class="icon">📍📍</div>
         <h2>Find Recycling Points</h2>
         <p>
           Search recycling locations and view useful information such as accepted waste and opening hours.
