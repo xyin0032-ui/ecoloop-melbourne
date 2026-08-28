@@ -2,14 +2,14 @@
 import { reactive, ref } from 'vue'
 
 const form = reactive({
-  fullName: '',
+  username: '',
   email: '',
   password: '',
   confirmPassword: '',
 })
 
 const errors = reactive({
-  fullName: '',
+  username: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -17,58 +17,112 @@ const errors = reactive({
 
 const successMessage = ref('')
 
-function validateForm() {
-  errors.fullName = ''
-  errors.email = ''
-  errors.password = ''
-  errors.confirmPassword = ''
-  successMessage.value = ''
+function validateUsername() {
+  errors.username = ''
 
-  let isValid = true
-
-  if (!form.fullName.trim()) {
-    errors.fullName = 'Please enter your full name.'
-    isValid = false
+  if (!form.username.trim()) {
+    errors.username = 'Please enter a username.'
+    return false
   }
+
+  if (form.username.trim().length < 3) {
+    errors.username = 'Username must be at least 3 characters.'
+    return false
+  }
+
+  return true
+}
+
+function validateEmail() {
+  errors.email = ''
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   if (!form.email.trim()) {
     errors.email = 'Please enter your email address.'
-    isValid = false
-  } else if (!emailPattern.test(form.email)) {
-    errors.email = 'Please enter a valid email address.'
-    isValid = false
+    return false
   }
+
+  if (!emailPattern.test(form.email)) {
+    errors.email = 'Please enter a valid email address.'
+    return false
+  }
+
+  return true
+}
+
+function validatePassword() {
+  errors.password = ''
 
   if (!form.password) {
     errors.password = 'Please enter a password.'
-    isValid = false
-  } else if (form.password.length < 8) {
-    errors.password = 'Password must be at least 8 characters.'
-    isValid = false
+    return false
   }
+
+  if (form.password.length < 8) {
+    errors.password = 'Password must be at least 8 characters.'
+    return false
+  }
+
+  if (!/[A-Z]/.test(form.password)) {
+    errors.password = 'Password must include at least one uppercase letter.'
+    return false
+  }
+
+  if (!/[a-z]/.test(form.password)) {
+    errors.password = 'Password must include at least one lowercase letter.'
+    return false
+  }
+
+  if (!/[^A-Za-z0-9]/.test(form.password)) {
+    errors.password = 'Password must include at least one special character.'
+    return false
+  }
+
+  return true
+}
+
+function validateConfirmPassword() {
+  errors.confirmPassword = ''
 
   if (!form.confirmPassword) {
     errors.confirmPassword = 'Please confirm your password.'
-    isValid = false
-  } else if (form.confirmPassword !== form.password) {
-    errors.confirmPassword = 'Passwords do not match.'
-    isValid = false
+    return false
   }
 
-  if (isValid) {
+  if (form.confirmPassword !== form.password) {
+    errors.confirmPassword = 'Passwords do not match.'
+    return false
+  }
+
+  return true
+}
+
+function validateForm() {
+  successMessage.value = ''
+
+  const usernameValid = validateUsername()
+  const emailValid = validateEmail()
+  const passwordValid = validatePassword()
+  const confirmPasswordValid = validateConfirmPassword()
+
+  if (
+    usernameValid &&
+    emailValid &&
+    passwordValid &&
+    confirmPasswordValid
+  ) {
     successMessage.value = 'Account created successfully!'
   }
 }
 
 function clearForm() {
-  form.fullName = ''
+  form.username = ''
   form.email = ''
   form.password = ''
   form.confirmPassword = ''
 
-  errors.fullName = ''
+  errors.username = ''
   errors.email = ''
   errors.password = ''
   errors.confirmPassword = ''
@@ -82,6 +136,7 @@ function clearForm() {
     <section class="register-container">
       <div class="register-header">
         <p class="eyebrow">Create Account</p>
+
         <h1>Join EcoLoop Melbourne</h1>
 
         <p>
@@ -91,17 +146,18 @@ function clearForm() {
 
       <form class="register-form" @submit.prevent="validateForm">
         <div class="form-group">
-          <label for="fullName">Full Name</label>
+          <label for="username">Username</label>
 
           <input
-            id="fullName"
-            v-model="form.fullName"
+            id="username"
+            v-model="form.username"
             type="text"
-            placeholder="Enter your full name"
+            placeholder="At least 3 characters"
+            @blur="validateUsername"
           />
 
-          <p v-if="errors.fullName" class="error-message">
-            {{ errors.fullName }}
+          <p v-if="errors.username" class="error-message">
+            {{ errors.username }}
           </p>
         </div>
 
@@ -113,6 +169,7 @@ function clearForm() {
             v-model="form.email"
             type="text"
             placeholder="Enter your email address"
+            @blur="validateEmail"
           />
 
           <p v-if="errors.email" class="error-message">
@@ -127,8 +184,14 @@ function clearForm() {
             id="password"
             v-model="form.password"
             type="password"
-            placeholder="At least 8 characters"
+            placeholder="Enter your password"
+            @blur="validatePassword"
           />
+
+          <p class="password-help">
+            At least 8 characters with uppercase, lowercase and a special
+            character.
+          </p>
 
           <p v-if="errors.password" class="error-message">
             {{ errors.password }}
@@ -143,6 +206,7 @@ function clearForm() {
             v-model="form.confirmPassword"
             type="password"
             placeholder="Enter your password again"
+            @blur="validateConfirmPassword"
           />
 
           <p v-if="errors.confirmPassword" class="error-message">
@@ -234,6 +298,13 @@ function clearForm() {
 
 .form-group input:focus {
   border-color: #2f6f4e;
+}
+
+.password-help {
+  margin: 7px 0 0;
+  color: #7a847f;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .error-message {
