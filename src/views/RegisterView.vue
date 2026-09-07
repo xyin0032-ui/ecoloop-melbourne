@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, ref } from 'vue'
+import { registerUser } from '../utils/auth'
 
 const form = reactive({
   username: '',
@@ -16,6 +17,7 @@ const errors = reactive({
 })
 
 const successMessage = ref('')
+const registerError = ref('')
 
 function validateUsername() {
   errors.username = ''
@@ -98,8 +100,9 @@ function validateConfirmPassword() {
   return true
 }
 
-function validateForm() {
+async function validateForm() {
   successMessage.value = ''
+  registerError.value = ''
 
   const usernameValid = validateUsername()
   const emailValid = validateEmail()
@@ -112,7 +115,23 @@ function validateForm() {
     passwordValid &&
     confirmPasswordValid
   ) {
+    const result = await registerUser(
+      form.username,
+      form.email,
+      form.password,
+    )
+
+    if (!result.success) {
+      registerError.value = result.message
+      return
+    }
+
     successMessage.value = 'Account created successfully!'
+
+    form.username = ''
+    form.email = ''
+    form.password = ''
+    form.confirmPassword = ''
   }
 }
 
@@ -128,6 +147,7 @@ function clearForm() {
   errors.confirmPassword = ''
 
   successMessage.value = ''
+  registerError.value = ''
 }
 </script>
 
@@ -213,6 +233,10 @@ function clearForm() {
             {{ errors.confirmPassword }}
           </p>
         </div>
+
+        <p v-if="registerError" class="error-box">
+          {{ registerError }}
+        </p>
 
         <p v-if="successMessage" class="success-message">
           {{ successMessage }}
@@ -311,6 +335,15 @@ function clearForm() {
   margin: 7px 0 0;
   color: #b42318;
   font-size: 13px;
+}
+
+.error-box {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background-color: #fef3f2;
+  color: #b42318;
+  font-weight: 600;
 }
 
 .success-message {
