@@ -28,7 +28,8 @@ export async function registerUser(username, email, password) {
   const users = getUsers()
 
   const usernameExists = users.some(
-    (user) => user.username.toLowerCase() === username.trim().toLowerCase(),
+    (user) =>
+      user.username.toLowerCase() === username.trim().toLowerCase(),
   )
 
   if (usernameExists) {
@@ -39,7 +40,8 @@ export async function registerUser(username, email, password) {
   }
 
   const emailExists = users.some(
-    (user) => user.email.toLowerCase() === email.trim().toLowerCase(),
+    (user) =>
+      user.email.toLowerCase() === email.trim().toLowerCase(),
   )
 
   if (emailExists) {
@@ -68,6 +70,41 @@ export async function registerUser(username, email, password) {
   }
 }
 
+export async function loginUser(email, password) {
+  const users = getUsers()
+  const passwordHash = await hashPassword(password)
+
+  const user = users.find(
+    (item) =>
+      item.email === email.trim().toLowerCase() &&
+      item.password === passwordHash,
+  )
+
+  if (!user) {
+    return {
+      success: false,
+      message: 'Incorrect email or password.',
+    }
+  }
+
+  const currentUser = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+  }
+
+  localStorage.setItem(
+    CURRENT_USER_KEY,
+    JSON.stringify(currentUser),
+  )
+
+  return {
+    success: true,
+    user: currentUser,
+  }
+}
+
 export function getCurrentUser() {
   const savedUser = localStorage.getItem(CURRENT_USER_KEY)
 
@@ -76,4 +113,8 @@ export function getCurrentUser() {
   }
 
   return JSON.parse(savedUser)
+}
+
+export function logoutUser() {
+  localStorage.removeItem(CURRENT_USER_KEY)
 }

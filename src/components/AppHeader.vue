@@ -1,11 +1,19 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { getCurrentUser, logoutUser } from '../utils/auth'
 
 const menuOpen = ref(false)
+const currentUser = ref(getCurrentUser())
 
 function closeMenu() {
   menuOpen.value = false
+}
+
+function handleLogout() {
+  logoutUser()
+  currentUser.value = null
+  window.location.href = '/'
 }
 </script>
 
@@ -42,13 +50,33 @@ function closeMenu() {
           About Us
         </RouterLink>
 
-        <RouterLink
-          to="/register"
-          class="register-button"
-          @click="closeMenu"
-        >
-          Register
-        </RouterLink>
+        <template v-if="!currentUser">
+          <RouterLink to="/login" class="nav-button" @click="closeMenu">
+            Login
+          </RouterLink>
+
+          <RouterLink
+            to="/register"
+            class="register-button"
+            @click="closeMenu"
+          >
+            Register
+          </RouterLink>
+        </template>
+
+        <template v-else>
+          <span class="user-name">
+            Hi, {{ currentUser.username }}
+          </span>
+
+          <button
+            type="button"
+            class="logout-button"
+            @click="handleLogout"
+          >
+            Logout
+          </button>
+        </template>
       </nav>
     </div>
   </header>
@@ -98,8 +126,10 @@ function closeMenu() {
   color: #2f6f4e;
 }
 
-.register-button {
+.register-button,
+.logout-button {
   padding: 10px 18px;
+  border: none;
   border-radius: 8px;
   background-color: #2f6f4e;
   color: #ffffff;
@@ -109,8 +139,20 @@ function closeMenu() {
   transition: 0.2s;
 }
 
-.register-button:hover {
+.register-button:hover,
+.logout-button:hover {
   background-color: #24583e;
+}
+
+.logout-button {
+  cursor: pointer;
+}
+
+.user-name {
+  padding: 10px 4px;
+  color: #2f6f4e;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .router-link-active.nav-button {
@@ -129,7 +171,6 @@ function closeMenu() {
   font-size: 22px;
 }
 
-/* Tablet and mobile */
 @media (max-width: 768px) {
   .nav-container {
     padding: 12px 20px;
@@ -166,11 +207,16 @@ function closeMenu() {
     text-align: left;
   }
 
-  .register-button {
+  .register-button,
+  .logout-button {
     width: 100%;
     box-sizing: border-box;
     padding: 12px 14px;
     text-align: center;
+  }
+
+  .user-name {
+    padding: 10px 14px;
   }
 }
 </style>

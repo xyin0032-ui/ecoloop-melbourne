@@ -4,6 +4,7 @@ import HomeView from '../views/HomeView.vue'
 import RecyclingGuideView from '../views/RecyclingGuideView.vue'
 import RecyclingPointsView from '../views/RecyclingPointsView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import LoginView from '../views/LoginView.vue'
 import AboutView from '../views/AboutView.vue'
 
 const router = createRouter({
@@ -31,9 +32,14 @@ const router = createRouter({
       component: RegisterView,
     },
     {
-  path: '/about',
-  name: 'about',
-  component: AboutView,
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: AboutView,
     },
   ],
 })
