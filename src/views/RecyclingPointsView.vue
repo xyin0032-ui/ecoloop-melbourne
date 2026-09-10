@@ -1,9 +1,20 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { recyclingPoints } from '../data/recyclingPoints'
+import { getCurrentUser } from '../utils/auth'
+import {
+  addRating,
+  getPointRatings,
+  getAverageRating,
+} from '../utils/ratings'
 
 const searchText = ref('')
 const selectedWaste = ref('All')
+const selectedRatings = ref({})
+const ratingMessage = ref({})
+const ratingUpdate = ref(0)
+
+const currentUser = getCurrentUser()
 
 const wasteTypes = computed(() => {
   const allTypes = recyclingPoints.flatMap((point) => point.acceptedWaste)
@@ -25,6 +36,47 @@ const filteredPoints = computed(() => {
     return matchesSearch && matchesWaste
   })
 })
+
+function selectRating(pointId, rating) {
+  selectedRatings.value[pointId] = rating
+  ratingMessage.value[pointId] = ''
+}
+
+function submitRating(pointId) {
+  if (!currentUser) {
+    ratingMessage.value[pointId] = 'Please login before submitting a rating.'
+    return
+  }
+
+  const rating = selectedRatings.value[pointId]
+
+  if (!rating) {
+    ratingMessage.value[pointId] = 'Please select a rating.'
+    return
+  }
+
+  addRating(
+    pointId,
+    currentUser.id,
+    rating,
+  )
+
+  ratingUpdate.value++
+
+  ratingMessage.value[pointId] = 'Rating submitted successfully.'
+}
+
+function averageRating(pointId) {
+  ratingUpdate.value
+
+  return getAverageRating(pointId)
+}
+
+function ratingCount(pointId) {
+  ratingUpdate.value
+
+  return getPointRatings(pointId).length
+}
 </script>
 
 <template>
@@ -114,6 +166,55 @@ const filteredPoints = computed(() => {
                 </span>
               </div>
             </div>
+          </div>
+
+          <div class="average-rating">
+            <strong>Average Rating</strong>
+
+            <p v-if="ratingCount(point.id) > 0">
+              {{ averageRating(point.id).toFixed(1) }} / 5
+              ·
+              {{ ratingCount(point.id) }}
+              {{ ratingCount(point.id) === 1 ? 'rating' : 'ratings' }}
+            </p>
+
+            <p v-else>
+              No ratings yet
+            </p>
+          </div>
+
+          <div class="rating-section">
+            <strong>Your Rating</strong>
+
+            <div class="stars">
+              <button
+                v-for="star in 5"
+                :key="star"
+                type="button"
+                class="star-button"
+                :class="{
+                  selected: star <= (selectedRatings[point.id] || 0),
+                }"
+                @click="selectRating(point.id, star)"
+              >
+                ★
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="rating-button"
+              @click="submitRating(point.id)"
+            >
+              Submit Rating
+            </button>
+
+            <p
+              v-if="ratingMessage[point.id]"
+              class="rating-message"
+            >
+              {{ ratingMessage[point.id] }}
+            </p>
           </div>
         </article>
       </div>
@@ -259,16 +360,12 @@ const filteredPoints = computed(() => {
 }
 
 .info-row {
-  margin-bottom: 19px;
-}
-
-.info-row:last-child {
-  margin-bottom: 0;
+  margin-bottom: 18px;
 }
 
 .info-row strong {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
   color: #374151;
   font-size: 14px;
 }
@@ -294,8 +391,74 @@ const filteredPoints = computed(() => {
   font-weight: 600;
 }
 
+.average-rating {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.average-rating strong {
+  color: #374151;
+  font-size: 14px;
+}
+
+.average-rating p {
+  margin: 8px 0 0;
+  color: #65716b;
+}
+
+.rating-section {
+  margin-top: 20px;
+}
+
+.rating-section strong {
+  color: #374151;
+  font-size: 14px;
+}
+
+.stars {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0 14px;
+}
+
+.star-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #cfd5d2;
+  cursor: pointer;
+  font-size: 28px;
+}
+
+.star-button.selected {
+  color: #d49b32;
+}
+
+.rating-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2f6f4e;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rating-button:hover {
+  background-color: #24583e;
+}
+
+.rating-message {
+  margin: 12px 0 0;
+  color: #2f6f4e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .no-results {
-  padding: 55px 20px;
+  padding: 50px 20px;
   border: 1px solid #e2e8e5;
   border-radius: 14px;
   background-color: #ffffff;
@@ -303,16 +466,24 @@ const filteredPoints = computed(() => {
 }
 
 .no-results h3 {
-  margin: 0 0 8px;
+  margin-top: 0;
   color: #26352e;
 }
 
 .no-results p {
-  margin: 0;
+  margin-bottom: 0;
   color: #65716b;
 }
 
 @media (max-width: 768px) {
+  .page-header {
+    padding-top: 50px;
+  }
+
+  .page-header h1 {
+    font-size: 36px;
+  }
+
   .search-panel {
     grid-template-columns: 1fr;
   }
@@ -324,11 +495,12 @@ const filteredPoints = computed(() => {
 
 @media (max-width: 576px) {
   .page-header {
-    padding: 50px 20px 35px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .page-header h1 {
-    font-size: 34px;
+    font-size: 32px;
   }
 
   .intro {
@@ -339,18 +511,14 @@ const filteredPoints = computed(() => {
     padding: 0 20px;
   }
 
-  .search-panel {
-    padding: 18px;
+  .point-card {
+    padding: 22px;
   }
 
   .results-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 7px;
-  }
-
-  .point-card {
-    padding: 22px;
+    gap: 8px;
   }
 }
 </style>
