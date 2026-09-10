@@ -50,6 +50,15 @@ function handleLogout() {
           About Us
         </RouterLink>
 
+        <RouterLink
+          v-if="currentUser && currentUser.role === 'admin'"
+          to="/admin"
+          class="nav-button"
+          @click="closeMenu"
+        >
+          Admin Dashboard
+        </RouterLink>
+
         <template v-if="!currentUser">
           <RouterLink to="/login" class="nav-button" @click="closeMenu">
             Login

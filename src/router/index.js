@@ -6,6 +6,10 @@ import RecyclingPointsView from '../views/RecyclingPointsView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import LoginView from '../views/LoginView.vue'
 import AboutView from '../views/AboutView.vue'
+import AdminView from '../views/AdminView.vue'
+import AccessDeniedView from '../views/AccessDeniedView.vue'
+
+import { getCurrentUser } from '../utils/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,7 +45,30 @@ const router = createRouter({
       name: 'about',
       component: AboutView,
     },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: AdminView,
+      meta: {
+        requiresAdmin: true,
+      },
+    },
+    {
+      path: '/access-denied',
+      name: 'access-denied',
+      component: AccessDeniedView,
+    },
   ],
+})
+
+router.beforeEach((to) => {
+  const currentUser = getCurrentUser()
+
+  if (to.meta.requiresAdmin) {
+    if (!currentUser || currentUser.role !== 'admin') {
+      return '/access-denied'
+    }
+  }
 })
 
 export default router

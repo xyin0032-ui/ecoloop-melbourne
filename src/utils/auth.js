@@ -24,6 +24,31 @@ async function hashPassword(password) {
     .join('')
 }
 
+export async function setupAdminUser() {
+  const users = getUsers()
+
+  const adminExists = users.some(
+    (user) => user.email === 'admin@ecoloop.com',
+  )
+
+  if (adminExists) {
+    return
+  }
+
+  const passwordHash = await hashPassword('Admin123!')
+
+  const adminUser = {
+    id: Date.now(),
+    username: 'admin',
+    email: 'admin@ecoloop.com',
+    password: passwordHash,
+    role: 'admin',
+  }
+
+  users.push(adminUser)
+  saveUsers(users)
+}
+
 export async function registerUser(username, email, password) {
   const users = getUsers()
 
