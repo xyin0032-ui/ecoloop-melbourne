@@ -55,11 +55,16 @@ function submitRating(pointId) {
     return
   }
 
-  addRating(
+  const saved = addRating(
     pointId,
     currentUser.id,
     rating,
   )
+
+  if (!saved) {
+    ratingMessage.value[pointId] = 'Invalid rating.'
+    return
+  }
 
   ratingUpdate.value++
 

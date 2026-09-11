@@ -8,7 +8,17 @@ export function getUsers() {
     return []
   }
 
-  return JSON.parse(savedUsers)
+  try {
+    const users = JSON.parse(savedUsers)
+
+    if (Array.isArray(users)) {
+      return users
+    }
+
+    return []
+  } catch {
+    return []
+  }
 }
 
 function saveUsers(users) {
@@ -52,9 +62,40 @@ export async function setupAdminUser() {
 export async function registerUser(username, email, password) {
   const users = getUsers()
 
+  const cleanUsername = username.trim()
+  const cleanEmail = email.trim().toLowerCase()
+
+  if (
+    cleanUsername.length < 3 ||
+    cleanUsername.length > 30
+  ) {
+    return {
+      success: false,
+      message: 'Username must be between 3 and 30 characters.',
+    }
+  }
+
+  const usernamePattern = /^[A-Za-z0-9_]+$/
+
+  if (!usernamePattern.test(cleanUsername)) {
+    return {
+      success: false,
+      message: 'Username can only contain letters, numbers and underscores.',
+    }
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  if (!emailPattern.test(cleanEmail)) {
+    return {
+      success: false,
+      message: 'Please enter a valid email address.',
+    }
+  }
+
   const usernameExists = users.some(
     (user) =>
-      user.username.toLowerCase() === username.trim().toLowerCase(),
+      user.username.toLowerCase() === cleanUsername.toLowerCase(),
   )
 
   if (usernameExists) {
@@ -66,7 +107,7 @@ export async function registerUser(username, email, password) {
 
   const emailExists = users.some(
     (user) =>
-      user.email.toLowerCase() === email.trim().toLowerCase(),
+      user.email.toLowerCase() === cleanEmail,
   )
 
   if (emailExists) {
@@ -80,8 +121,8 @@ export async function registerUser(username, email, password) {
 
   const newUser = {
     id: Date.now(),
-    username: username.trim(),
-    email: email.trim().toLowerCase(),
+    username: cleanUsername,
+    email: cleanEmail,
     password: passwordHash,
     role: 'user',
   }
@@ -97,11 +138,12 @@ export async function registerUser(username, email, password) {
 
 export async function loginUser(email, password) {
   const users = getUsers()
+  const cleanEmail = email.trim().toLowerCase()
   const passwordHash = await hashPassword(password)
 
   const user = users.find(
     (item) =>
-      item.email === email.trim().toLowerCase() &&
+      item.email === cleanEmail &&
       item.password === passwordHash,
   )
 
@@ -137,7 +179,11 @@ export function getCurrentUser() {
     return null
   }
 
-  return JSON.parse(savedUser)
+  try {
+    return JSON.parse(savedUser)
+  } catch {
+    return null
+  }
 }
 
 export function logoutUser() {

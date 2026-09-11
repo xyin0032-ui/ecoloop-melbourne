@@ -7,7 +7,17 @@ export function getRatings() {
     return []
   }
 
-  return JSON.parse(savedRatings)
+  try {
+    const ratings = JSON.parse(savedRatings)
+
+    if (Array.isArray(ratings)) {
+      return ratings
+    }
+
+    return []
+  } catch {
+    return []
+  }
 }
 
 function saveRatings(ratings) {
@@ -15,6 +25,16 @@ function saveRatings(ratings) {
 }
 
 export function addRating(pointId, userId, rating) {
+  const ratingValue = Number(rating)
+
+  if (
+    !Number.isInteger(ratingValue) ||
+    ratingValue < 1 ||
+    ratingValue > 5
+  ) {
+    return false
+  }
+
   const ratings = getRatings()
 
   const existingRating = ratings.find(
@@ -24,16 +44,18 @@ export function addRating(pointId, userId, rating) {
   )
 
   if (existingRating) {
-    existingRating.rating = rating
+    existingRating.rating = ratingValue
   } else {
     ratings.push({
       pointId,
       userId,
-      rating,
+      rating: ratingValue,
     })
   }
 
   saveRatings(ratings)
+
+  return true
 }
 
 export function getPointRatings(pointId) {
