@@ -1,191 +1,190 @@
-const USERS_KEY = 'ecoloop_users'
-const CURRENT_USER_KEY = 'ecoloop_current_user'
+import { ref } from 'vue'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth'
 
-export function getUsers() {
-  const savedUsers = localStorage.getItem(USERS_KEY)
+import {
+  doc,
+  setDoc,
+  getDoc,
+} from 'firebase/firestore'
 
-  if (!savedUsers) {
-    return []
-  }
+import { auth } from '../Firebase/init'
+import db from '../Firebase/init'
 
+export const currentUser = ref(null)
+
+let authLoaded
+
+const authReady = new Promise((resolve) => {
+  authLoaded = resolve
+})
+
+onAuthStateChanged(auth, async (firebaseUser) => {
   try {
-    const users = JSON.parse(savedUsers)
+    if (firebaseUser) {
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
 
-    if (Array.isArray(users)) {
-      return users
+      if (userDoc.exists()) {
+        const userData = userDoc.data()
+
+        currentUser.value = {
+          id: firebaseUser.uid,
+          username: userData.username || firebaseUser.email,
+          email: firebaseUser.email,
+          role: userData.role || 'user',
+        }
+      } else {
+        currentUser.value = {
+          id: firebaseUser.uid,
+          username: firebaseUser.email,
+          email: firebaseUser.email,
+          role: 'user',
+        }
+      }
+    } else {
+      currentUser.value = null
     }
-
-    return []
-  } catch {
-    return []
-  }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-}
-
-async function hashPassword(password) {
-  const data = new TextEncoder().encode(password)
-  const hash = await crypto.subtle.digest('SHA-256', data)
-
-  return Array.from(new Uint8Array(hash))
-    .map((item) => item.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-export async function setupAdminUser() {
-  const users = getUsers()
-
-  const adminExists = users.some(
-    (user) => user.email === 'admin@ecoloop.com',
-  )
-
-  if (adminExists) {
-    return
+  } catch (error) {
+    console.error('Authentication error:', error)
+    currentUser.value = null
   }
 
-  const passwordHash = await hashPassword('Admin123!')
+  authLoaded()
+})
 
-  const adminUser = {
-    id: Date.now(),
-    username: 'admin',
-    email: 'admin@ecoloop.com',
-    password: passwordHash,
-    role: 'admin',
-  }
-
-  users.push(adminUser)
-  saveUsers(users)
+export function waitForAuth() {
+  return authReady
 }
 
 export async function registerUser(username, email, password) {
-  const users = getUsers()
-
   const cleanUsername = username.trim()
   const cleanEmail = email.trim().toLowerCase()
 
-  if (
-    cleanUsername.length < 3 ||
-    cleanUsername.length > 30
-  ) {
+  if (cleanUsername.length < 3 || cleanUsername.length > 30) {
     return {
       success: false,
       message: 'Username must be between 3 and 30 characters.',
     }
   }
 
-  const usernamePattern = /^[A-Za-z0-9_]+$/
-
-  if (!usernamePattern.test(cleanUsername)) {
+  if (!/^[A-Za-z0-9_]+$/.test(cleanUsername)) {
     return {
       success: false,
       message: 'Username can only contain letters, numbers and underscores.',
     }
   }
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  try {
+    const result = await createUserWithEmailAndPassword(
+      auth,
+      cleanEmail,
+      password,
+    )
 
-  if (!emailPattern.test(cleanEmail)) {
+    const newUser = {
+      username: cleanUsername,
+      email: cleanEmail,
+      role: 'user',
+    }
+
+    await setDoc(doc(db, 'users', result.user.uid), newUser)
+
+    currentUser.value = {
+      id: result.user.uid,
+      ...newUser,
+    }
+
+    return {
+      success: true,
+      user: currentUser.value,
+    }
+  } catch (error) {
+    console.error('Registration error:', error)
+
+    let message = 'Registration failed. Please try again.'
+
+    if (error.code === 'auth/email-already-in-use') {
+      message = 'This email address is already registered.'
+    } else if (error.code === 'auth/invalid-email') {
+      message = 'Please enter a valid email address.'
+    } else if (error.code === 'auth/weak-password') {
+      message = 'Please choose a stronger password.'
+    } else if (error.code === 'permission-denied') {
+      message = 'Cannot save user details. Please check Firestore permissions.'
+    }
+
     return {
       success: false,
-      message: 'Please enter a valid email address.',
+      message,
     }
-  }
-
-  const usernameExists = users.some(
-    (user) =>
-      user.username.toLowerCase() === cleanUsername.toLowerCase(),
-  )
-
-  if (usernameExists) {
-    return {
-      success: false,
-      message: 'This username is already registered.',
-    }
-  }
-
-  const emailExists = users.some(
-    (user) =>
-      user.email.toLowerCase() === cleanEmail,
-  )
-
-  if (emailExists) {
-    return {
-      success: false,
-      message: 'This email address is already registered.',
-    }
-  }
-
-  const passwordHash = await hashPassword(password)
-
-  const newUser = {
-    id: Date.now(),
-    username: cleanUsername,
-    email: cleanEmail,
-    password: passwordHash,
-    role: 'user',
-  }
-
-  users.push(newUser)
-  saveUsers(users)
-
-  return {
-    success: true,
-    user: newUser,
   }
 }
 
 export async function loginUser(email, password) {
-  const users = getUsers()
   const cleanEmail = email.trim().toLowerCase()
-  const passwordHash = await hashPassword(password)
 
-  const user = users.find(
-    (item) =>
-      item.email === cleanEmail &&
-      item.password === passwordHash,
-  )
+  try {
+    const result = await signInWithEmailAndPassword(
+      auth,
+      cleanEmail,
+      password,
+    )
 
-  if (!user) {
+    const userDoc = await getDoc(doc(db, 'users', result.user.uid))
+
+    if (!userDoc.exists()) {
+      await signOut(auth)
+
+      return {
+        success: false,
+        message: 'User profile not found. Please contact support.',
+      }
+    }
+
+    const userData = userDoc.data()
+
+    currentUser.value = {
+      id: result.user.uid,
+      username: userData.username || cleanEmail,
+      email: result.user.email,
+      role: userData.role || 'user',
+    }
+
+    return {
+      success: true,
+      user: currentUser.value,
+    }
+  } catch (error) {
+    console.error('Login error:', error)
+
+    let message = 'Login failed. Please try again.'
+
+    if (
+      error.code === 'auth/invalid-credential' ||
+      error.code === 'auth/wrong-password' ||
+      error.code === 'auth/user-not-found'
+    ) {
+      message = 'Incorrect email or password.'
+    } else if (error.code === 'permission-denied') {
+      message = 'Cannot read user details. Please check Firestore permissions.'
+    }
+
     return {
       success: false,
-      message: 'Incorrect email or password.',
+      message,
     }
-  }
-
-  const currentUser = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-  }
-
-  localStorage.setItem(
-    CURRENT_USER_KEY,
-    JSON.stringify(currentUser),
-  )
-
-  return {
-    success: true,
-    user: currentUser,
   }
 }
 
 export function getCurrentUser() {
-  const savedUser = localStorage.getItem(CURRENT_USER_KEY)
-
-  if (!savedUser) {
-    return null
-  }
-
-  try {
-    return JSON.parse(savedUser)
-  } catch {
-    return null
-  }
+  return currentUser.value
 }
 
-export function logoutUser() {
-  localStorage.removeItem(CURRENT_USER_KEY)
+export async function logoutUser() {
+  await signOut(auth)
+  currentUser.value = null
 }

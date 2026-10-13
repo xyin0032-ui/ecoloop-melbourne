@@ -1,15 +1,42 @@
 <script setup>
-import { getUsers } from '../utils/auth'
+import { ref, computed, onMounted } from 'vue'
+import { collection, getDocs } from 'firebase/firestore'
+import db from '../Firebase/init'
 
-const users = getUsers()
+const users = ref([])
+const loading = ref(true)
+const errorMessage = ref('')
 
-const userCount = users.filter(
-  (user) => user.role === 'user',
-).length
+const userCount = computed(() => {
+  return users.value.filter((user) => user.role === 'user').length
+})
 
-const adminCount = users.filter(
-  (user) => user.role === 'admin',
-).length
+const adminCount = computed(() => {
+  return users.value.filter((user) => user.role === 'admin').length
+})
+
+async function loadUsers() {
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const snapshot = await getDocs(collection(db, 'users'))
+
+    users.value = snapshot.docs.map((item) => ({
+      id: item.id,
+      ...item.data()
+    }))
+  } catch (error) {
+    console.error('Failed to load users:', error)
+    errorMessage.value = 'Unable to load user accounts.'
+  }
+
+  loading.value = false
+}
+
+onMounted(() => {
+  loadUsers()
+})
 </script>
 
 <template>
@@ -25,46 +52,58 @@ const adminCount = users.filter(
         </p>
       </div>
 
-      <div class="summary-grid">
-        <div class="summary-card">
-          <h2>{{ userCount }}</h2>
-          <p>Registered Users</p>
+      <p v-if="loading">Loading user accounts...</p>
+
+      <p v-else-if="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </p>
+
+      <template v-else>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <h2>{{ userCount }}</h2>
+            <p>Registered Users</p>
+          </div>
+
+          <div class="summary-card">
+            <h2>{{ adminCount }}</h2>
+            <p>Admin Accounts</p>
+          </div>
+
+          <div class="summary-card">
+            <h2>{{ users.length }}</h2>
+            <p>Total Accounts</p>
+          </div>
         </div>
 
-        <div class="summary-card">
-          <h2>{{ adminCount }}</h2>
-          <p>Admin Accounts</p>
-        </div>
+        <section class="users-section">
+          <h2>User Accounts</h2>
 
-        <div class="summary-card">
-          <h2>{{ users.length }}</h2>
-          <p>Total Accounts</p>
-        </div>
-      </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Username</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Role</th>
+                </tr>
+              </thead>
 
-      <section class="users-section">
-        <h2>User Accounts</h2>
+              <tbody>
+                <tr v-for="user in users" :key="user.id">
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.role }}</td>
+                </tr>
 
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Role</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.role }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                <tr v-if="users.length === 0">
+                  <td colspan="3">No users found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </template>
     </section>
   </main>
 </template>
@@ -163,6 +202,11 @@ th {
 
 td {
   color: #65716b;
+}
+
+.error-message {
+  color: #b42318;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {

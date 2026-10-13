@@ -1,19 +1,23 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getCurrentUser, logoutUser } from '../utils/auth'
+import { currentUser, logoutUser } from '../utils/auth'
 
 const menuOpen = ref(false)
-const currentUser = ref(getCurrentUser())
 
 function closeMenu() {
   menuOpen.value = false
 }
 
-function handleLogout() {
-  logoutUser()
-  currentUser.value = null
-  window.location.href = '/'
+async function handleLogout() {
+  try {
+    await logoutUser()
+    closeMenu()
+    window.location.href = '/'
+  } catch (error) {
+    console.error('Logout failed:', error)
+    alert('Logout failed. Please try again.')
+  }
 }
 </script>
 
@@ -60,7 +64,11 @@ function handleLogout() {
         </RouterLink>
 
         <template v-if="!currentUser">
-          <RouterLink to="/login" class="nav-button" @click="closeMenu">
+          <RouterLink
+            to="/login"
+            class="nav-button"
+            @click="closeMenu"
+          >
             Login
           </RouterLink>
 

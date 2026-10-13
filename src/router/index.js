@@ -1,73 +1,97 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory
+} from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
-import RecyclingGuideView from '../views/RecyclingGuideView.vue'
-import RecyclingPointsView from '../views/RecyclingPointsView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import LoginView from '../views/LoginView.vue'
 import AboutView from '../views/AboutView.vue'
-import AdminView from '../views/AdminView.vue'
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
 import AccessDeniedView from '../views/AccessDeniedView.vue'
+import AddBookView from '../views/AddBookView.vue'
+import RecyclingPointsView from '../views/RecyclingPointsView.vue'
+import RecyclingGuideView from '../views/RecyclingGuideView.vue'
+import AdminView from '../views/AdminView.vue'
 
-import { getCurrentUser } from '../utils/auth'
+import { getCurrentUser, waitForAuth } from '../utils/auth'
+
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomeView
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginView
+  },
+  {
+    path: '/firebase-signin',
+    name: 'FirebaseSignin',
+    component: LoginView
+  },
+  {
+    path: '/register',
+    alias: '/firebase-register',
+    name: 'FireRegister',
+    component: RegisterView
+  },
+  {
+    path: '/addbook',
+    name: 'AddBook',
+    component: AddBookView
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: AboutView,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/points',
+    name: 'RecyclingPoints',
+    component: RecyclingPointsView
+  },
+  {
+    path: '/guide',
+    name: 'RecyclingGuide',
+    component: RecyclingGuideView
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: AdminView,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true
+    }
+  },
+  {
+    path: '/access-denied',
+    name: 'AccessDenied',
+    component: AccessDeniedView
+  }
+]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/guide',
-      name: 'recycling-guide',
-      component: RecyclingGuideView,
-    },
-    {
-      path: '/points',
-      name: 'recycling-points',
-      component: RecyclingPointsView,
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: RegisterView,
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      component: AboutView,
-    },
-    {
-      path: '/admin',
-      name: 'admin',
-      component: AdminView,
-      meta: {
-        requiresAdmin: true,
-      },
-    },
-    {
-      path: '/access-denied',
-      name: 'access-denied',
-      component: AccessDeniedView,
-    },
-  ],
+  history: createWebHistory(),
+  routes
 })
 
-router.beforeEach((to) => {
-  const currentUser = getCurrentUser()
+router.beforeEach(async (to) => {
+  await waitForAuth()
 
-  if (to.meta.requiresAdmin) {
-    if (!currentUser || currentUser.role !== 'admin') {
-      return '/access-denied'
-    }
+  const user = getCurrentUser()
+
+  if (to.meta.requiresAuth && !user) {
+    return '/login'
+  }
+
+  if (to.meta.requiresAdmin && user?.role !== 'admin') {
+    return '/access-denied'
   }
 })
 
