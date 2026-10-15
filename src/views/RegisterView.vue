@@ -28,7 +28,8 @@ function validateUsername() {
   }
 
   if (form.username.trim().length < 3) {
-    errors.username = 'Username must be at least 3 characters.'
+    errors.username =
+      'Username must be at least 3 characters.'
     return false
   }
 
@@ -38,15 +39,21 @@ function validateUsername() {
 function validateEmail() {
   errors.email = ''
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-  if (!form.email.trim()) {
-    errors.email = 'Please enter your email address.'
+  const cleanEmail =
+    form.email.trim()
+
+  if (!cleanEmail) {
+    errors.email =
+      'Please enter your email address.'
     return false
   }
 
-  if (!emailPattern.test(form.email)) {
-    errors.email = 'Please enter a valid email address.'
+  if (!emailPattern.test(cleanEmail)) {
+    errors.email =
+      'Please enter a valid email address.'
     return false
   }
 
@@ -57,27 +64,32 @@ function validatePassword() {
   errors.password = ''
 
   if (!form.password) {
-    errors.password = 'Please enter a password.'
+    errors.password =
+      'Please enter a password.'
     return false
   }
 
   if (form.password.length < 8) {
-    errors.password = 'Password must be at least 8 characters.'
+    errors.password =
+      'Password must be at least 8 characters.'
     return false
   }
 
   if (!/[A-Z]/.test(form.password)) {
-    errors.password = 'Password must include at least one uppercase letter.'
+    errors.password =
+      'Password must include at least one uppercase letter.'
     return false
   }
 
   if (!/[a-z]/.test(form.password)) {
-    errors.password = 'Password must include at least one lowercase letter.'
+    errors.password =
+      'Password must include at least one lowercase letter.'
     return false
   }
 
   if (!/[^A-Za-z0-9]/.test(form.password)) {
-    errors.password = 'Password must include at least one special character.'
+    errors.password =
+      'Password must include at least one special character.'
     return false
   }
 
@@ -88,12 +100,17 @@ function validateConfirmPassword() {
   errors.confirmPassword = ''
 
   if (!form.confirmPassword) {
-    errors.confirmPassword = 'Please confirm your password.'
+    errors.confirmPassword =
+      'Please confirm your password.'
     return false
   }
 
-  if (form.confirmPassword !== form.password) {
-    errors.confirmPassword = 'Passwords do not match.'
+  if (
+    form.confirmPassword !==
+    form.password
+  ) {
+    errors.confirmPassword =
+      'Passwords do not match.'
     return false
   }
 
@@ -104,10 +121,17 @@ async function validateForm() {
   successMessage.value = ''
   registerError.value = ''
 
-  const usernameValid = validateUsername()
-  const emailValid = validateEmail()
-  const passwordValid = validatePassword()
-  const confirmPasswordValid = validateConfirmPassword()
+  const usernameValid =
+    validateUsername()
+
+  const emailValid =
+    validateEmail()
+
+  const passwordValid =
+    validatePassword()
+
+  const confirmPasswordValid =
+    validateConfirmPassword()
 
   if (
     usernameValid &&
@@ -115,18 +139,22 @@ async function validateForm() {
     passwordValid &&
     confirmPasswordValid
   ) {
-    const result = await registerUser(
-      form.username,
-      form.email,
-      form.password,
-    )
+    const result =
+      await registerUser(
+        form.username,
+        form.email,
+        form.password,
+      )
 
     if (!result.success) {
-      registerError.value = result.message
+      registerError.value =
+        result.message
+
       return
     }
 
-    successMessage.value = 'Account created successfully!'
+    successMessage.value =
+      'Account created successfully!'
 
     form.username = ''
     form.email = ''
@@ -155,99 +183,188 @@ function clearForm() {
   <main class="register-page">
     <section class="register-container">
       <div class="register-header">
-        <p class="eyebrow">Create Account</p>
+        <p class="eyebrow">
+          Create Account
+        </p>
 
-        <h1>Join EcoLoop Melbourne</h1>
+        <h1>
+          Join EcoLoop Melbourne
+        </h1>
 
         <p>
-          Create an account to make your recycling experience easier.
+          Create an account to make your
+          recycling experience easier.
         </p>
       </div>
 
-      <form class="register-form" @submit.prevent="validateForm">
+      <form
+        class="register-form"
+        @submit.prevent="validateForm"
+      >
         <div class="form-group">
-          <label for="username">Username</label>
+          <label for="username">
+            Username
+          </label>
 
           <input
             id="username"
             v-model="form.username"
             type="text"
+            autocomplete="username"
             placeholder="At least 3 characters"
+            :aria-invalid="
+              !!errors.username
+            "
+            :aria-describedby="
+              errors.username
+                ? 'username-error'
+                : undefined
+            "
             @blur="validateUsername"
           />
 
-          <p v-if="errors.username" class="error-message">
+          <p
+            v-if="errors.username"
+            id="username-error"
+            class="error-message"
+            role="alert"
+          >
             {{ errors.username }}
           </p>
         </div>
 
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email">
+            Email
+          </label>
 
           <input
             id="email"
             v-model="form.email"
-            type="text"
+            type="email"
+            autocomplete="email"
             placeholder="Enter your email address"
+            :aria-invalid="
+              !!errors.email
+            "
+            :aria-describedby="
+              errors.email
+                ? 'email-error'
+                : undefined
+            "
             @blur="validateEmail"
           />
 
-          <p v-if="errors.email" class="error-message">
+          <p
+            v-if="errors.email"
+            id="email-error"
+            class="error-message"
+            role="alert"
+          >
             {{ errors.email }}
           </p>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">
+            Password
+          </label>
 
           <input
             id="password"
             v-model="form.password"
             type="password"
+            autocomplete="new-password"
             placeholder="Enter your password"
+            :aria-invalid="
+              !!errors.password
+            "
+            aria-describedby="password-help password-error"
             @blur="validatePassword"
           />
 
-          <p class="password-help">
-            At least 8 characters with uppercase, lowercase and a special
-            character.
+          <p
+            id="password-help"
+            class="password-help"
+          >
+            At least 8 characters with
+            uppercase, lowercase and a
+            special character.
           </p>
 
-          <p v-if="errors.password" class="error-message">
+          <p
+            v-if="errors.password"
+            id="password-error"
+            class="error-message"
+            role="alert"
+          >
             {{ errors.password }}
           </p>
         </div>
 
         <div class="form-group">
-          <label for="confirmPassword">Confirm Password</label>
+          <label for="confirmPassword">
+            Confirm Password
+          </label>
 
           <input
             id="confirmPassword"
             v-model="form.confirmPassword"
             type="password"
+            autocomplete="new-password"
             placeholder="Enter your password again"
-            @blur="validateConfirmPassword"
+            :aria-invalid="
+              !!errors.confirmPassword
+            "
+            :aria-describedby="
+              errors.confirmPassword
+                ? 'confirm-password-error'
+                : undefined
+            "
+            @blur="
+              validateConfirmPassword
+            "
           />
 
-          <p v-if="errors.confirmPassword" class="error-message">
+          <p
+            v-if="errors.confirmPassword"
+            id="confirm-password-error"
+            class="error-message"
+            role="alert"
+          >
             {{ errors.confirmPassword }}
           </p>
         </div>
 
-        <p v-if="registerError" class="error-box">
+        <p
+          v-if="registerError"
+          class="error-box"
+          role="alert"
+        >
           {{ registerError }}
         </p>
 
-        <p v-if="successMessage" class="success-message">
+        <p
+          v-if="successMessage"
+          class="success-message"
+          aria-live="polite"
+        >
           {{ successMessage }}
         </p>
 
         <div class="form-actions">
-          <button type="submit" class="create-button">
+          <button
+            type="submit"
+            class="create-button"
+          >
             Create Account
           </button>
 
-          <button type="button" class="clear-button" @click="clearForm">
+          <button
+            type="button"
+            class="clear-button"
+            @click="clearForm"
+          >
             Clear
           </button>
         </div>
@@ -317,16 +434,21 @@ function clearForm() {
   border: 1px solid #cfd9d3;
   border-radius: 8px;
   font-size: 15px;
-  outline: none;
 }
 
 .form-group input:focus {
   border-color: #2f6f4e;
 }
 
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid #1f6feb;
+  outline-offset: 3px;
+}
+
 .password-help {
   margin: 7px 0 0;
-  color: #7a847f;
+  color: #4b5563;
   font-size: 12px;
   line-height: 1.5;
 }

@@ -1,9 +1,14 @@
 import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import { setupAdminUser } from './utils/auth'
 
-setupAdminUser()
+import App from './App.vue'
+
+import 'bootstrap/dist/css/bootstrap.min.css'
+
+import 'bootstrap'
+
+import router from './router'
+
+import './Firebase/init'
 
 const app = createApp(App)
 

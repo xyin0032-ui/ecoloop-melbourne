@@ -6,6 +6,8 @@ export const recyclingPoints = [
     openingHours: 'Mon - Sat, 9:00 AM - 5:00 PM',
     acceptedWaste: ['Batteries', 'E-waste', 'Cardboard'],
     distance: '1.2 km',
+    latitude: -37.8145,
+    longitude: 144.9695,
   },
   {
     id: 2,
@@ -14,6 +16,8 @@ export const recyclingPoints = [
     openingHours: 'Mon - Fri, 8:30 AM - 4:30 PM',
     acceptedWaste: ['Glass', 'Plastic', 'Cardboard'],
     distance: '2.4 km',
+    latitude: -37.8048,
+    longitude: 144.9672,
   },
   {
     id: 3,
@@ -22,6 +26,8 @@ export const recyclingPoints = [
     openingHours: 'Tue - Sun, 10:00 AM - 6:00 PM',
     acceptedWaste: ['E-waste', 'Batteries', 'Clothing'],
     distance: '2.8 km',
+    latitude: -37.8212,
+    longitude: 144.965,
   },
   {
     id: 4,
@@ -30,5 +36,7 @@ export const recyclingPoints = [
     openingHours: 'Mon - Sat, 9:00 AM - 5:30 PM',
     acceptedWaste: ['Glass', 'Plastic', 'Clothing'],
     distance: '3.1 km',
+    latitude: -37.8175,
+    longitude: 144.9473,
   },
 ]

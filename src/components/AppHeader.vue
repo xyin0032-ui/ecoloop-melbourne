@@ -1,30 +1,35 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { currentUser, logoutUser } from '../utils/auth'
+import {
+  getCurrentUser,
+  logoutUser,
+} from '../utils/auth'
 
 const menuOpen = ref(false)
+const currentUser = ref(getCurrentUser())
 
 function closeMenu() {
   menuOpen.value = false
 }
 
 async function handleLogout() {
-  try {
-    await logoutUser()
-    closeMenu()
-    window.location.href = '/'
-  } catch (error) {
-    console.error('Logout failed:', error)
-    alert('Logout failed. Please try again.')
-  }
+  await logoutUser()
+
+  currentUser.value = null
+
+  window.location.href = '/'
 }
 </script>
 
 <template>
   <header class="header">
     <div class="nav-container">
-      <RouterLink to="/" class="logo" @click="closeMenu">
+      <RouterLink
+        to="/"
+        class="logo"
+        @click="closeMenu"
+      >
         EcoLoop Melbourne
       </RouterLink>
 
@@ -32,30 +37,78 @@ async function handleLogout() {
         class="menu-button"
         type="button"
         aria-label="Open navigation menu"
+        :aria-expanded="menuOpen"
         @click="menuOpen = !menuOpen"
       >
         ☰
       </button>
 
-      <nav class="nav-links" :class="{ open: menuOpen }">
-        <RouterLink to="/" class="nav-button" @click="closeMenu">
+      <nav
+        class="nav-links"
+        :class="{ open: menuOpen }"
+        aria-label="Main navigation"
+      >
+        <RouterLink
+          to="/"
+          class="nav-button"
+          @click="closeMenu"
+        >
           Home
         </RouterLink>
 
-        <RouterLink to="/guide" class="nav-button" @click="closeMenu">
+        <RouterLink
+          to="/guide"
+          class="nav-button"
+          @click="closeMenu"
+        >
           Recycling Guide
         </RouterLink>
 
-        <RouterLink to="/points" class="nav-button" @click="closeMenu">
+        <RouterLink
+          to="/points"
+          class="nav-button"
+          @click="closeMenu"
+        >
           Find Recycling Points
         </RouterLink>
 
-        <RouterLink to="/about" class="nav-button" @click="closeMenu">
+        <RouterLink
+          to="/data-tables"
+          class="nav-button"
+          @click="closeMenu"
+        >
+          Data Tables
+        </RouterLink>
+
+        <RouterLink
+          to="/map"
+          class="nav-button"
+          @click="closeMenu"
+        >
+          Recycling Map
+        </RouterLink>
+
+        <RouterLink
+          to="/email"
+          class="nav-button"
+          @click="closeMenu"
+        >
+          Email
+        </RouterLink>
+
+        <RouterLink
+          to="/about"
+          class="nav-button"
+          @click="closeMenu"
+        >
           About Us
         </RouterLink>
 
         <RouterLink
-          v-if="currentUser && currentUser.role === 'admin'"
+          v-if="
+            currentUser &&
+            currentUser.role === 'admin'
+          "
           to="/admin"
           class="nav-button"
           @click="closeMenu"
@@ -186,6 +239,12 @@ async function handleLogout() {
   color: #2f6f4e;
   cursor: pointer;
   font-size: 22px;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid #1f6feb;
+  outline-offset: 3px;
 }
 
 @media (max-width: 768px) {

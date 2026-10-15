@@ -6,21 +6,34 @@ import { RouterLink } from 'vue-router'
   <main class="home-page">
     <section class="hero">
       <div class="hero-content">
-        <p class="eyebrow">Recycle smarter in Melbourne</p>
+        <p class="eyebrow">
+          Recycle smarter in Melbourne
+        </p>
 
-        <h1>Make recycling simple with EcoLoop Melbourne</h1>
+        <h1>
+          Make recycling simple with
+          EcoLoop Melbourne
+        </h1>
 
         <p class="hero-text">
-          Find clear recycling information, learn how to dispose of different waste items,
-          and discover recycling points across Melbourne.
+          Find clear recycling information,
+          learn how to dispose of different
+          waste items, and discover recycling
+          points across Melbourne.
         </p>
 
         <div class="hero-actions">
-          <RouterLink to="/guide" class="primary-button">
+          <RouterLink
+            to="/guide"
+            class="primary-button"
+          >
             Recycling Guide
           </RouterLink>
 
-          <RouterLink to="/points" class="secondary-button">
+          <RouterLink
+            to="/points"
+            class="secondary-button"
+          >
             Find Recycling Points
           </RouterLink>
         </div>
@@ -29,26 +42,59 @@ import { RouterLink } from 'vue-router'
 
     <section class="features">
       <div class="feature-card">
-        <div class="icon">♻️</div>
-        <h2>Recycling Guide</h2>
+        <div
+          class="icon"
+          aria-hidden="true"
+        >
+          ♻️
+        </div>
+
+        <h2>
+          Recycling Guide
+        </h2>
+
         <p>
-          Check how common household waste such as batteries, glass and e-waste should be recycled.
+          Check how common household waste
+          such as batteries, glass and
+          e-waste should be recycled.
         </p>
       </div>
 
       <div class="feature-card">
-        <div class="icon">📍📍</div>
-        <h2>Find Recycling Points</h2>
+        <div
+          class="icon"
+          aria-hidden="true"
+        >
+          📍
+        </div>
+
+        <h2>
+          Find Recycling Points
+        </h2>
+
         <p>
-          Search recycling locations and view useful information such as accepted waste and opening hours.
+          Search recycling locations and
+          view useful information such as
+          accepted waste and opening hours.
         </p>
       </div>
 
       <div class="feature-card">
-        <div class="icon">🌱🌱🌱</div>
-        <h2>Reduce Waste</h2>
+        <div
+          class="icon"
+          aria-hidden="true"
+        >
+          🌱
+        </div>
+
+        <h2>
+          Reduce Waste
+        </h2>
+
         <p>
-          Make better recycling choices and support a cleaner and more sustainable Melbourne community.
+          Make better recycling choices and
+          support a cleaner and more
+          sustainable Melbourne community.
         </p>
       </div>
     </section>
@@ -130,6 +176,11 @@ import { RouterLink } from 'vue-router'
   background-color: #edf7f1;
 }
 
+a:focus-visible {
+  outline: 3px solid #1f6feb;
+  outline-offset: 3px;
+}
+
 .features {
   max-width: 1200px;
   margin: 0 auto;
@@ -163,7 +214,6 @@ import { RouterLink } from 'vue-router'
   line-height: 1.6;
 }
 
-/* Tablet */
 @media (max-width: 992px) {
   .hero {
     padding-top: 70px;
@@ -179,7 +229,6 @@ import { RouterLink } from 'vue-router'
   }
 }
 
-/* Mobile */
 @media (max-width: 576px) {
   .hero {
     padding: 55px 20px 50px;

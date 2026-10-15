@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { loginUser } from '../utils/auth'
 
 const form = reactive({
@@ -17,15 +18,21 @@ const loginError = ref('')
 function validateEmail() {
   errors.email = ''
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-  if (!form.email.trim()) {
-    errors.email = 'Please enter your email address.'
+  const cleanEmail =
+    form.email.trim()
+
+  if (!cleanEmail) {
+    errors.email =
+      'Please enter your email address.'
     return false
   }
 
-  if (!emailPattern.test(form.email)) {
-    errors.email = 'Please enter a valid email address.'
+  if (!emailPattern.test(cleanEmail)) {
+    errors.email =
+      'Please enter a valid email address.'
     return false
   }
 
@@ -36,7 +43,8 @@ function validatePassword() {
   errors.password = ''
 
   if (!form.password) {
-    errors.password = 'Please enter your password.'
+    errors.password =
+      'Please enter your password.'
     return false
   }
 
@@ -46,17 +54,26 @@ function validatePassword() {
 async function validateForm() {
   loginError.value = ''
 
-  const emailValid = validateEmail()
-  const passwordValid = validatePassword()
+  const emailValid =
+    validateEmail()
 
-  if (emailValid && passwordValid) {
-    const result = await loginUser(
-      form.email,
-      form.password,
-    )
+  const passwordValid =
+    validatePassword()
+
+  if (
+    emailValid &&
+    passwordValid
+  ) {
+    const result =
+      await loginUser(
+        form.email,
+        form.password,
+      )
 
     if (!result.success) {
-      loginError.value = result.message
+      loginError.value =
+        result.message
+
       return
     }
 
@@ -79,64 +96,116 @@ function clearForm() {
   <main class="login-page">
     <section class="login-container">
       <div class="login-header">
-        <p class="eyebrow">Welcome Back</p>
+        <p class="eyebrow">
+          Welcome Back
+        </p>
 
-        <h1>Login to EcoLoop Melbourne</h1>
+        <h1>
+          Login to EcoLoop Melbourne
+        </h1>
 
         <p>
-          Login to your account to continue your recycling journey.
+          Login to your account to
+          continue your recycling journey.
         </p>
       </div>
 
-      <form class="login-form" @submit.prevent="validateForm">
+      <form
+        class="login-form"
+        @submit.prevent="validateForm"
+      >
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email">
+            Email
+          </label>
 
           <input
             id="email"
             v-model="form.email"
-            type="text"
+            type="email"
+            autocomplete="email"
             placeholder="Enter your email address"
+            :aria-invalid="
+              !!errors.email
+            "
+            :aria-describedby="
+              errors.email
+                ? 'login-email-error'
+                : undefined
+            "
             @blur="validateEmail"
           />
 
-          <p v-if="errors.email" class="error-message">
+          <p
+            v-if="errors.email"
+            id="login-email-error"
+            class="error-message"
+            role="alert"
+          >
             {{ errors.email }}
           </p>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">
+            Password
+          </label>
 
           <input
             id="password"
             v-model="form.password"
             type="password"
+            autocomplete="current-password"
             placeholder="Enter your password"
+            :aria-invalid="
+              !!errors.password
+            "
+            :aria-describedby="
+              errors.password
+                ? 'login-password-error'
+                : undefined
+            "
             @blur="validatePassword"
           />
 
-          <p v-if="errors.password" class="error-message">
+          <p
+            v-if="errors.password"
+            id="login-password-error"
+            class="error-message"
+            role="alert"
+          >
             {{ errors.password }}
           </p>
         </div>
 
-        <p v-if="loginError" class="error-box">
+        <p
+          v-if="loginError"
+          class="error-box"
+          role="alert"
+        >
           {{ loginError }}
         </p>
 
         <div class="form-actions">
-          <button type="submit" class="login-button">
+          <button
+            type="submit"
+            class="login-button"
+          >
             Login
           </button>
 
-          <button type="button" class="clear-button" @click="clearForm">
+          <button
+            type="button"
+            class="clear-button"
+            @click="clearForm"
+          >
             Clear
           </button>
         </div>
 
         <p class="register-text">
           Don't have an account?
+
           <RouterLink to="/register">
             Register here
           </RouterLink>
@@ -207,11 +276,17 @@ function clearForm() {
   border: 1px solid #cfd9d3;
   border-radius: 8px;
   font-size: 15px;
-  outline: none;
 }
 
 .form-group input:focus {
   border-color: #2f6f4e;
+}
+
+input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #1f6feb;
+  outline-offset: 3px;
 }
 
 .error-message {

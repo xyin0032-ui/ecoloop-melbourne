@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { recyclingPoints } from '../data/recyclingPoints'
 import { getCurrentUser } from '../utils/auth'
 import {
@@ -72,15 +72,78 @@ function submitRating(pointId) {
 }
 
 function averageRating(pointId) {
-  ratingUpdate.value
-
+  void ratingUpdate.value
   return getAverageRating(pointId)
 }
 
 function ratingCount(pointId) {
-  ratingUpdate.value
-
+  void ratingUpdate.value
   return getPointRatings(pointId).length
+}
+
+// Interactive Table
+const tableSearch = ref({
+  name: '',
+  address: '',
+  waste: '',
+  hours: '',
+})
+
+const sortColumn = ref('name')
+const sortAscending = ref(true)
+const currentPage = ref(1)
+const pageSize = 10
+
+const tableRows = computed(() => {
+  const rows = recyclingPoints.filter((point) => {
+    return (
+      point.name.toLowerCase().includes(tableSearch.value.name.toLowerCase()) &&
+      point.address.toLowerCase().includes(tableSearch.value.address.toLowerCase()) &&
+      point.acceptedWaste.join(', ').toLowerCase().includes(tableSearch.value.waste.toLowerCase()) &&
+      point.openingHours.toLowerCase().includes(tableSearch.value.hours.toLowerCase())
+    )
+  })
+
+  return rows.sort((a, b) => {
+    function getValue(point) {
+      if (sortColumn.value === 'waste') {
+        return point.acceptedWaste.join(', ')
+      }
+
+      if (sortColumn.value === 'hours') {
+        return point.openingHours
+      }
+
+      return point[sortColumn.value]
+    }
+
+    const result = String(getValue(a)).localeCompare(String(getValue(b)))
+    return sortAscending.value ? result : -result
+  })
+})
+
+const totalPages = computed(() => {
+  return Math.max(1, Math.ceil(tableRows.value.length / pageSize))
+})
+
+const visibleRows = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return tableRows.value.slice(start, start + pageSize)
+})
+
+watch(tableSearch, () => {
+  currentPage.value = 1
+}, { deep: true })
+
+function sortTable(column) {
+  if (sortColumn.value === column) {
+    sortAscending.value = !sortAscending.value
+  } else {
+    sortColumn.value = column
+    sortAscending.value = true
+  }
+
+  currentPage.value = 1
 }
 </script>
 
@@ -227,6 +290,121 @@ function ratingCount(pointId) {
       <div v-else class="no-results">
         <h3>No recycling points found</h3>
         <p>Try another location or waste type.</p>
+      </div>
+    </section>
+
+    <section class="data-table-section">
+      <h2>Recycling Points Data Table</h2>
+      <p>Search each column or click a heading to sort the results.</p>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption>Recycling point locations and accepted waste</caption>
+
+          <thead>
+            <tr>
+              <th scope="col">
+                <button type="button" @click="sortTable('name')">
+                  Name
+                  {{ sortColumn === 'name' ? (sortAscending ? '▲' : '▼') : '↕' }}
+                </button>
+              </th>
+
+              <th scope="col">
+                <button type="button" @click="sortTable('address')">
+                  Address
+                  {{ sortColumn === 'address' ? (sortAscending ? '▲' : '▼') : '↕' }}
+                </button>
+              </th>
+
+              <th scope="col">
+                <button type="button" @click="sortTable('waste')">
+                  Accepted Waste
+                  {{ sortColumn === 'waste' ? (sortAscending ? '▲' : '▼') : '↕' }}
+                </button>
+              </th>
+
+              <th scope="col">
+                <button type="button" @click="sortTable('hours')">
+                  Opening Hours
+                  {{ sortColumn === 'hours' ? (sortAscending ? '▲' : '▼') : '↕' }}
+                </button>
+              </th>
+            </tr>
+
+            <tr>
+              <th>
+                <input
+                  v-model="tableSearch.name"
+                  aria-label="Search name column"
+                  placeholder="Search name"
+                />
+              </th>
+
+              <th>
+                <input
+                  v-model="tableSearch.address"
+                  aria-label="Search address column"
+                  placeholder="Search address"
+                />
+              </th>
+
+              <th>
+                <input
+                  v-model="tableSearch.waste"
+                  aria-label="Search waste column"
+                  placeholder="Search waste"
+                />
+              </th>
+
+              <th>
+                <input
+                  v-model="tableSearch.hours"
+                  aria-label="Search opening hours column"
+                  placeholder="Search hours"
+                />
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr v-for="point in visibleRows" :key="point.id">
+              <td>{{ point.name }}</td>
+              <td>{{ point.address }}</td>
+              <td>{{ point.acceptedWaste.join(', ') }}</td>
+              <td>{{ point.openingHours }}</td>
+            </tr>
+
+            <tr v-if="visibleRows.length === 0">
+              <td colspan="4">No matching recycling points.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-footer">
+        <span>
+          {{ tableRows.length }} results · 10 rows per page ·
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+
+        <div class="table-buttons">
+          <button
+            type="button"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+          >
+            Previous
+          </button>
+
+          <button
+            type="button"
+            :disabled="currentPage >= totalPages"
+            @click="currentPage++"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </section>
   </main>
@@ -480,6 +658,108 @@ function ratingCount(pointId) {
   color: #65716b;
 }
 
+.data-table-section {
+  max-width: 1100px;
+  margin: 35px auto 0;
+  padding: 24px;
+  border: 1px solid #e2e8e5;
+  border-radius: 14px;
+  background-color: #ffffff;
+}
+
+.data-table-section h2 {
+  margin-top: 0;
+  color: #26352e;
+}
+
+.data-table-section p {
+  color: #65716b;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table caption {
+  padding: 6px 0;
+  color: #65716b;
+  text-align: left;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8e5;
+  vertical-align: top;
+}
+
+.data-table th {
+  background-color: #edf7f1;
+}
+
+.data-table th button {
+  border: none;
+  background: none;
+  color: #24583e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+.data-table input {
+  width: 100%;
+  min-width: 125px;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid #cfd9d3;
+  border-radius: 6px;
+}
+
+.data-table button:focus-visible,
+.data-table input:focus-visible,
+.table-buttons button:focus-visible {
+  outline: 3px solid #24583e;
+  outline-offset: 2px;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  color: #374151;
+}
+
+.table-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.table-buttons button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 7px;
+  background-color: #2f6f4e;
+  color: white;
+  cursor: pointer;
+}
+
+.table-buttons button:disabled {
+  background-color: #cfd9d3;
+  color: #374151;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .page-header {
     padding-top: 50px;
@@ -524,6 +804,12 @@ function ratingCount(pointId) {
     align-items: flex-start;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .data-table-section {
+    margin-left: 20px;
+    margin-right: 20px;
+    padding: 16px;
   }
 }
 </style>
