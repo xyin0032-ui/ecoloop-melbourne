@@ -1,190 +1,337 @@
-import { ref } from 'vue'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
+  updateProfile,
 } from 'firebase/auth'
 
 import {
   doc,
-  setDoc,
   getDoc,
+  setDoc,
 } from 'firebase/firestore'
 
-import { auth } from '../Firebase/init'
-import db from '../Firebase/init'
+import db, { auth } from '../Firebase/init'
 
-export const currentUser = ref(null)
+const USERS_KEY = 'ecoloop_users'
+const CURRENT_USER_KEY = 'ecoloop_current_user'
 
-let authLoaded
+export function getUsers() {
+  const savedUsers =
+    localStorage.getItem(USERS_KEY)
 
-const authReady = new Promise((resolve) => {
-  authLoaded = resolve
-})
-
-onAuthStateChanged(auth, async (firebaseUser) => {
-  try {
-    if (firebaseUser) {
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data()
-
-        currentUser.value = {
-          id: firebaseUser.uid,
-          username: userData.username || firebaseUser.email,
-          email: firebaseUser.email,
-          role: userData.role || 'user',
-        }
-      } else {
-        currentUser.value = {
-          id: firebaseUser.uid,
-          username: firebaseUser.email,
-          email: firebaseUser.email,
-          role: 'user',
-        }
-      }
-    } else {
-      currentUser.value = null
-    }
-  } catch (error) {
-    console.error('Authentication error:', error)
-    currentUser.value = null
+  if (!savedUsers) {
+    return []
   }
 
-  authLoaded()
-})
+  try {
+    const users =
+      JSON.parse(savedUsers)
 
-export function waitForAuth() {
-  return authReady
+    if (Array.isArray(users)) {
+      return users
+    }
+
+    return []
+  } catch {
+    return []
+  }
 }
 
-export async function registerUser(username, email, password) {
-  const cleanUsername = username.trim()
-  const cleanEmail = email.trim().toLowerCase()
+function saveUsers(users) {
+  localStorage.setItem(
+    USERS_KEY,
+    JSON.stringify(users),
+  )
+}
 
-  if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+export async function setupAdminUser() {
+  const users = getUsers()
+
+  const adminExists =
+    users.some(
+      (user) =>
+        user.email ===
+        'admin@ecoloop.com',
+    )
+
+  if (adminExists) {
+    return
+  }
+
+  const adminUser = {
+    id: 'admin',
+    username: 'admin',
+    email: 'admin@ecoloop.com',
+    role: 'admin',
+  }
+
+  users.push(adminUser)
+  saveUsers(users)
+}
+
+export async function registerUser(
+  username,
+  email,
+  password,
+) {
+  const users = getUsers()
+
+  const cleanUsername =
+    username.trim()
+
+  const cleanEmail =
+    email.trim().toLowerCase()
+
+  if (
+    cleanUsername.length < 3 ||
+    cleanUsername.length > 30
+  ) {
     return {
       success: false,
-      message: 'Username must be between 3 and 30 characters.',
+      message:
+        'Username must be between 3 and 30 characters.',
     }
   }
 
-  if (!/^[A-Za-z0-9_]+$/.test(cleanUsername)) {
+  const usernamePattern =
+    /^[A-Za-z0-9_]+$/
+
+  if (
+    !usernamePattern.test(
+      cleanUsername,
+    )
+  ) {
     return {
       success: false,
-      message: 'Username can only contain letters, numbers and underscores.',
+      message:
+        'Username can only contain letters, numbers and underscores.',
+    }
+  }
+
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  if (
+    !emailPattern.test(
+      cleanEmail,
+    )
+  ) {
+    return {
+      success: false,
+      message:
+        'Please enter a valid email address.',
+    }
+  }
+
+  const usernameExists =
+    users.some(
+      (user) =>
+        user.username
+          .toLowerCase() ===
+        cleanUsername
+          .toLowerCase(),
+    )
+
+  if (usernameExists) {
+    return {
+      success: false,
+      message:
+        'This username is already registered.',
     }
   }
 
   try {
-    const result = await createUserWithEmailAndPassword(
-      auth,
-      cleanEmail,
-      password,
+    const userCredential =
+      await createUserWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password,
+      )
+
+    await updateProfile(
+      userCredential.user,
+      {
+        displayName:
+          cleanUsername,
+      },
     )
 
     const newUser = {
-      username: cleanUsername,
-      email: cleanEmail,
+      id:
+        userCredential.user.uid,
+      username:
+        cleanUsername,
+      email:
+        cleanEmail,
       role: 'user',
     }
 
-    await setDoc(doc(db, 'users', result.user.uid), newUser)
+    await setDoc(
+      doc(
+        db,
+        'users',
+        userCredential.user.uid,
+      ),
+      {
+        username:
+          cleanUsername,
+        email:
+          cleanEmail,
+        role: 'user',
+      },
+    )
 
-    currentUser.value = {
-      id: result.user.uid,
-      ...newUser,
-    }
+    users.push(newUser)
+    saveUsers(users)
+
+    await signOut(auth)
 
     return {
       success: true,
-      user: currentUser.value,
+      user: newUser,
     }
   } catch (error) {
-    console.error('Registration error:', error)
+    if (
+      error.code ===
+      'auth/email-already-in-use'
+    ) {
+      return {
+        success: false,
+        message:
+          'This email address is already registered.',
+      }
+    }
 
-    let message = 'Registration failed. Please try again.'
-
-    if (error.code === 'auth/email-already-in-use') {
-      message = 'This email address is already registered.'
-    } else if (error.code === 'auth/invalid-email') {
-      message = 'Please enter a valid email address.'
-    } else if (error.code === 'auth/weak-password') {
-      message = 'Please choose a stronger password.'
-    } else if (error.code === 'permission-denied') {
-      message = 'Cannot save user details. Please check Firestore permissions.'
+    if (
+      error.code ===
+      'auth/weak-password'
+    ) {
+      return {
+        success: false,
+        message:
+          'Please choose a stronger password.',
+      }
     }
 
     return {
       success: false,
-      message,
+      message:
+        'Unable to create account. Please try again.',
     }
   }
 }
 
-export async function loginUser(email, password) {
-  const cleanEmail = email.trim().toLowerCase()
+export async function loginUser(
+  email,
+  password,
+) {
+  const cleanEmail =
+    email.trim().toLowerCase()
 
   try {
-    const result = await signInWithEmailAndPassword(
-      auth,
-      cleanEmail,
-      password,
+    const userCredential =
+      await signInWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password,
+      )
+
+    const firebaseUser =
+      userCredential.user
+
+    const userDoc =
+      await getDoc(
+        doc(
+          db,
+          'users',
+          firebaseUser.uid,
+        ),
+      )
+
+    let username =
+      firebaseUser.displayName ||
+      cleanEmail.split('@')[0]
+
+    let role = 'user'
+
+    if (userDoc.exists()) {
+      const userData =
+        userDoc.data()
+
+      username =
+        userData.username ||
+        username
+
+      role =
+        userData.role ||
+        'user'
+    }
+
+    const currentUser = {
+      id: firebaseUser.uid,
+      username,
+      email:
+        firebaseUser.email ||
+        cleanEmail,
+      role,
+    }
+
+    localStorage.setItem(
+      CURRENT_USER_KEY,
+      JSON.stringify(
+        currentUser,
+      ),
     )
-
-    const userDoc = await getDoc(doc(db, 'users', result.user.uid))
-
-    if (!userDoc.exists()) {
-      await signOut(auth)
-
-      return {
-        success: false,
-        message: 'User profile not found. Please contact support.',
-      }
-    }
-
-    const userData = userDoc.data()
-
-    currentUser.value = {
-      id: result.user.uid,
-      username: userData.username || cleanEmail,
-      email: result.user.email,
-      role: userData.role || 'user',
-    }
 
     return {
       success: true,
-      user: currentUser.value,
+      user: currentUser,
     }
   } catch (error) {
-    console.error('Login error:', error)
-
-    let message = 'Login failed. Please try again.'
-
-    if (
-      error.code === 'auth/invalid-credential' ||
-      error.code === 'auth/wrong-password' ||
-      error.code === 'auth/user-not-found'
-    ) {
-      message = 'Incorrect email or password.'
-    } else if (error.code === 'permission-denied') {
-      message = 'Cannot read user details. Please check Firestore permissions.'
-    }
+    console.error(
+      'Login error:',
+      error,
+    )
 
     return {
       success: false,
-      message,
+      message:
+        'Incorrect email or password.',
     }
   }
 }
 
 export function getCurrentUser() {
-  return currentUser.value
+  const savedUser =
+    localStorage.getItem(
+      CURRENT_USER_KEY,
+    )
+
+  if (!savedUser) {
+    return null
+  }
+
+  try {
+    return JSON.parse(
+      savedUser,
+    )
+  } catch {
+    return null
+  }
 }
 
 export async function logoutUser() {
-  await signOut(auth)
-  currentUser.value = null
+  try {
+    await signOut(auth)
+  } catch (error) {
+    console.error(
+      'Logout error:',
+      error,
+    )
+  }
+
+  localStorage.removeItem(
+    CURRENT_USER_KEY,
+  )
 }

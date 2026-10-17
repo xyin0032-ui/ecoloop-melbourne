@@ -74,6 +74,10 @@ const routes = [
     path: '/admin',
     name: 'Admin',
     component: AdminView,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
   },
   {
     path: '/about',
@@ -96,11 +100,20 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
+  const currentUser = getCurrentUser()
+
   if (
     to.meta.requiresAuth &&
-    !getCurrentUser()
+    !currentUser
   ) {
     return '/login'
+  }
+
+  if (
+    to.meta.requiresAdmin &&
+    currentUser?.role !== 'admin'
+  ) {
+    return '/access-denied'
   }
 })
 

@@ -1,48 +1,172 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { recyclingItems } from '../data/recyclingGuide'
+import {
+  computed,
+  ref,
+  onMounted,
+} from 'vue'
 
-const selectedCategory = ref('All')
+import {
+  recyclingItems,
+} from '../data/recyclingGuide'
 
-const categories = computed(() => {
-  return ['All', ...new Set(recyclingItems.map((item) => item.category))]
-})
+const STORAGE_KEY =
+  'ecoloop_recycling_guide'
 
-const filteredItems = computed(() => {
-  if (selectedCategory.value === 'All') {
-    return recyclingItems
+const selectedCategory =
+  ref('All')
+
+const guideItems =
+  ref([])
+
+const usingOfflineData =
+  ref(false)
+
+function saveGuideData() {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(
+      recyclingItems,
+    ),
+  )
+}
+
+function loadSavedGuideData() {
+  const savedData =
+    localStorage.getItem(
+      STORAGE_KEY,
+    )
+
+  if (!savedData) {
+    return []
   }
 
-  return recyclingItems.filter(
-    (item) => item.category === selectedCategory.value,
-  )
+  try {
+    const parsedData =
+      JSON.parse(savedData)
+
+    if (
+      Array.isArray(parsedData)
+    ) {
+      return parsedData
+    }
+
+    return []
+  } catch {
+    return []
+  }
+}
+
+function loadGuide() {
+  if (navigator.onLine) {
+    guideItems.value =
+      recyclingItems
+
+    saveGuideData()
+
+    usingOfflineData.value =
+      false
+  } else {
+    const savedData =
+      loadSavedGuideData()
+
+    if (
+      savedData.length > 0
+    ) {
+      guideItems.value =
+        savedData
+
+      usingOfflineData.value =
+        true
+    } else {
+      guideItems.value =
+        recyclingItems
+
+      usingOfflineData.value =
+        false
+    }
+  }
+}
+
+const categories =
+  computed(() => {
+    return [
+      'All',
+      ...new Set(
+        guideItems.value.map(
+          (item) =>
+            item.category,
+        ),
+      ),
+    ]
+  })
+
+const filteredItems =
+  computed(() => {
+    if (
+      selectedCategory.value ===
+      'All'
+    ) {
+      return guideItems.value
+    }
+
+    return guideItems.value.filter(
+      (item) =>
+        item.category ===
+        selectedCategory.value,
+    )
+  })
+
+onMounted(() => {
+  loadGuide()
 })
 </script>
 
 <template>
   <main class="guide-page">
     <section class="guide-header">
-      <p class="eyebrow">Recycling Guide</p>
+      <p class="eyebrow">
+        Recycling Guide
+      </p>
 
-      <h1>How should I recycle it?</h1>
+      <h1>
+        How should I recycle it?
+      </h1>
 
       <p class="intro">
         Select a category and learn how common household waste should be
         recycled in Melbourne.
       </p>
+
+      <p
+        v-if="usingOfflineData"
+        class="offline-data-message"
+        role="status"
+        aria-live="polite"
+      >
+        Offline guide loaded from saved data.
+      </p>
     </section>
 
     <section class="guide-content">
       <div class="filter-section">
-        <span class="filter-label">Filter by category:</span>
+        <span class="filter-label">
+          Filter by category:
+        </span>
 
         <div class="filter-buttons">
           <button
             v-for="category in categories"
             :key="category"
             class="filter-button"
-            :class="{ active: selectedCategory === category }"
-            @click="selectedCategory = category"
+            :class="{
+              active:
+                selectedCategory ===
+                category,
+            }"
+            @click="
+              selectedCategory =
+                category
+            "
           >
             {{ category }}
           </button>
@@ -63,7 +187,9 @@ const filteredItems = computed(() => {
             {{ item.category }}
           </div>
 
-          <h2>{{ item.name }}</h2>
+          <h2>
+            {{ item.name }}
+          </h2>
 
           <p>
             {{ item.description }}
@@ -106,6 +232,16 @@ const filteredItems = computed(() => {
   color: #65716b;
   font-size: 18px;
   line-height: 1.6;
+}
+
+.offline-data-message {
+  margin: 20px auto 0;
+  padding: 10px 16px;
+  border: 1px solid #ffecb5;
+  border-radius: 8px;
+  background-color: #fff3cd;
+  color: #664d03;
+  font-weight: 600;
 }
 
 .guide-content {
@@ -155,13 +291,15 @@ const filteredItems = computed(() => {
 
 .guide-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns:
+    repeat(3, 1fr);
   gap: 24px;
 }
 
 .guide-card {
   padding: 28px;
-  border: 1px solid #e2e8e5;
+  border:
+    1px solid #e2e8e5;
   border-radius: 14px;
   background-color: #ffffff;
 }
@@ -196,13 +334,15 @@ const filteredItems = computed(() => {
 
 @media (max-width: 992px) {
   .guide-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 }
 
 @media (max-width: 576px) {
   .guide-header {
-    padding: 50px 20px 35px;
+    padding:
+      50px 20px 35px;
   }
 
   .guide-header h1 {
@@ -218,7 +358,8 @@ const filteredItems = computed(() => {
   }
 
   .guide-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .filter-buttons {
